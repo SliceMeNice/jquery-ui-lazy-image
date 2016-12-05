@@ -32,7 +32,7 @@
 						widget._destroyWaypoints();
 					}
 				},
-				exit: function() {
+				exited: function() {
 					widget._isInViewVertically = false;
 				}
 			} );
@@ -52,7 +52,7 @@
 						widget._destroyWaypoints();
 					}
 				},
-				exit: function() {
+				exited: function() {
 					widget._isInViewHorizontally = false;
 				}
 			} );
