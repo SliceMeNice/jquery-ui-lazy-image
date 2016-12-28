@@ -10,67 +10,97 @@
 
 	$.widget( 'smn.lazyImage', {
 
-		options: {},
+		options: {
+			offset: 0.5
+		},
 
 		_create: function() {
 			var widget = this;
 
-			widget._trigger( 'willBeInitialized' );
+			widget._trigger( 'onWillBeInitialized' );
 
-			widget._verticalWaypoint = new Waypoint.Inview( {
+			widget.waypoints = [];
+			widget._createWaypoints();
+
+			widget._trigger( 'onHasBeenInitialized' );
+		},
+
+		_createWaypoint: function( config ) {
+			var widget = this;
+
+			widget.waypoints.push( new Waypoint( {
+				context: window,
 				element: widget.element[ 0 ],
-				horizontal: false,
-				enter: function() {
-					if ( !widget.element.is( ':visible' ) ) {
-						return;
-					}
+				offset: config.offset,
+				horizontal: config.horizontal,
+				handler: ( function( config ) {
+					return function( direction ) {
+						widget[ config[ direction ] ].call( widget, direction );
+					};
+				} )( config )
+			} ) );
+		},
 
-					widget._isInViewVertically = true;
+		_createWaypoints: function() {
+			var widget = this;
 
-					if ( widget._isInViewVertically && widget._isInViewHorizontally ) {
-						widget._inViewHandler();
-						widget._destroyWaypoints();
-					}
+			var configs = [
+				{
+					down: '_onEnterVertically',
+					up: '_onExitedVertically',
+					offset: function() {
+						return this.context.innerHeight() * ( 1 + widget.options.offset )
+					},
+					horizontal: false
 				},
-				exited: function() {
-					widget._isInViewVertically = false;
-				}
-			} );
-
-			widget._horizontalWaypoint = new Waypoint.Inview( {
-				element: widget.element[ 0 ],
-				horizontal: true,
-				enter: function() {
-					if ( !widget.element.is( ':visible' ) ) {
-						return;
-					}
-
-					widget._isInViewHorizontally = true;
-
-					if ( widget._isInViewVertically && widget._isInViewHorizontally ) {
-						widget._inViewHandler();
-						widget._destroyWaypoints();
-					}
+				{
+					down: '_onExitedVertically',
+					up: '_onEnterVertically',
+					offset: function() {
+						return - ( this.adapter.outerHeight() + this.context.innerHeight() * widget.options.offset )
+					},
+					horizontal: false
 				},
-				exited: function() {
-					widget._isInViewHorizontally = false;
+				{
+					right: '_onEnterHorizontally',
+					left: '_onExitedHorizontally',
+					offset: function() {
+						return this.context.innerWidth() * ( 1 + widget.options.offset );
+					},
+					horizontal: true
+				},
+				{
+					right: '_onExitedHorizontally',
+					left: '_onEnterHorizontally',
+					offset: function() {
+						return - ( this.adapter.outerWidth() + this.context.innerWidth() * widget.options.offset );
+					},
+					horizontal: true
 				}
-			} );
+			];
 
-			widget._trigger( 'hasBeenInitialized' );
+			configs.map( function( config ) {
+				widget._createWaypoint( config );
+			} );
+		},
+
+		_destroy: function() {
+			var widget = this;
+
+			widget._trigger( 'onWillBeDestroyed' );
+			widget._destroyWaypoints();
+			widget._trigger( 'onHasBeenDestroyed' );
 		},
 
 		_destroyWaypoints: function() {
 			var widget = this;
 
-			if ( widget._horizontalWaypoint ) {
-				widget._horizontalWaypoint.destroy();
-				widget._horizontalWaypoint = null;
-			}
+			if ( widget.waypoints && Array.isArray( widget.waypoints ) ) {
+				for ( var i = 0, end = widget.waypoints.length; i < end; i++ ) {
+					widget.waypoints[ i ].destroy();
+				}
 
-			if ( widget._verticalWaypoint ) {
-				widget._verticalWaypoint.destroy();
-				widget._verticalWaypoint = null;
+				widget.waypoints = [];
 			}
 		},
 
@@ -80,30 +110,57 @@
 			var imageUrl = widget.element.data( 'lazyImage' );
 
 			if ( imageUrl ) {
+				widget._trigger( 'onImageInViewport', null, [ widget, imageUrl ] );
+
 				$( '<img />' )
 					.one( 'load', function() {
-						widget.element.hide();
-
-						if ( widget.element.is( 'img' ) ) {
-							widget.element.attr( 'src', imageUrl );
-						} else {
-							widget.element.css( 'background-image', 'url(' + imageUrl + ')' );
-						}
-
-						widget.element.fadeIn();
+						widget._trigger( 'onImageLoaded', null, [ widget, imageUrl ] );
+					} )
+					.one( 'error', function() {
+						widget._trigger( 'onImageFailedToLoad', null, [ widget, imageUrl ] );
 					} )
 					.attr( 'src', imageUrl );
 			}
 		},
 
-		_destroy: function() {
+		_onEnterHorizontally: function() {
 			var widget = this;
-			
-			widget._trigger( 'willBeDestroyed' );
 
-			widget._destroyWaypoints();
+			if ( !widget.element.is( ':visible' ) ) {
+				return;
+			}
 
-			widget._trigger( 'hasBeenDestroyed' );
+			widget._isInViewHorizontally = true;
+
+			if ( widget._isInViewVertically && widget._isInViewHorizontally ) {
+				widget._inViewHandler();
+				widget._destroyWaypoints();
+			}
+		},
+
+		_onEnterVertically: function() {
+			var widget = this;
+
+			if ( !widget.element.is( ':visible' ) ) {
+				return;
+			}
+
+			widget._isInViewVertically = true;
+
+			if ( widget._isInViewVertically && widget._isInViewHorizontally ) {
+				widget._inViewHandler();
+				widget._destroyWaypoints();
+			}
+		},
+
+		_onExitedHorizontally: function() {
+			var widget = this;
+			widget._isInViewHorizontally = false;
+		},
+
+		_onExitedVertically: function() {
+			var widget = this;
+			widget._isInViewVertically = false;
 		}
 
 	} );
