@@ -1,0 +1,25 @@
+{
+  "name": "@slicemenice/jquery-ui-lazy-image",
+  "version": "1.0.1",
+  "description": "Image lazy loading based on jQuery UI Widget and Waypoints",
+  "keywords": [
+    "jQuery UI",
+    "lazy",
+    "lazy-loading",
+    "image"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SliceMeNice/jquery-ui-lazy-image.git"
+  },
+  "author": "SliceMeNice",
+  "contributors": [{
+    "name": "Stefan Ullinger",
+    "email": "stefan@slicemenice.de"
+  }],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/SliceMeNice/jquery-ui-lazy-image/issues"
+  },
+  "homepage": "https://github.com/SliceMeNice/jquery-ui-lazy-image#readme"
+}
